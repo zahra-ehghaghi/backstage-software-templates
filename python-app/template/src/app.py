@@ -3,7 +3,6 @@ import datetime
 import socket
 
 app = Flask(__name__)
-
 @app.route('/api/v1/info')
 def info():
     return jsonify({

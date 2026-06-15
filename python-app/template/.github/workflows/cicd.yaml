@@ -50,7 +50,7 @@ jobs:
           push: true
           tags: zahraehghaghi/${{values.app_name}}:${{ '${{ env.COMMIT_ID }}' }}     
     outputs: 
-      commit_id: ${{ '${{ env.SCOMMIT_ID }}' }}
+      commit_id: ${{ '${{ env.COMMIT_ID }}' }}
   cd:    
     runs-on: self-hosted
     needs: ci
