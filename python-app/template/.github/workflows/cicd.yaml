@@ -48,7 +48,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: zahraehghaghi/${{values.app_name}}:${{' ${{ env.COMMIT_ID }}' }}     
+          tags: zahraehghaghi/${{values.app_name}}:${{ '${{ env.COMMIT_ID }}' }}     
     outputs: 
       commit_id: ${{ '${{ env.SCOMMIT_ID }}' }}
   cd:    
