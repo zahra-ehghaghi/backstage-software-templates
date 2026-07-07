@@ -50,9 +50,9 @@ jobs:
           push: true
           tags: zahraehghaghi/${{values.app_name}}:${{ '${{ env.COMMIT_ID }}' }}     
     outputs: 
-      commit_id: ${{ '${{ env.COMMIT_ID }}' }}
+      commit_id: ${{ '${{ env.COMMIT_ID }}' }}  
   cd:    
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: ci
     steps:    
       
@@ -61,13 +61,28 @@ jobs:
       - name: Modify values file 
         shell: bash
         run: |       
-          echo ${{ '${{ needs.ci.outputs.commit_id }}' }}
+          echo ${{ needs.ci.outputs.commit_id }}
           pip install yq
-          yq -Yi '.image.tag= "${{ '${{ needs.ci.outputs.commit_id }}' }}"' charts/${{values.app_name}}/values-${{values.app_env}}.yaml
+          yq -Yi '.image.tag= "${{ needs.ci.outputs.commit_id }}"' charts/python-app/values.yaml
     
       - name: Commit change
         uses: EndBug/add-and-commit@v9
         with: 
-          message: 'Update values.yaml with ${{ '${{ needs.ci.outputs.commit_id }}' }}'
+          message: 'Update values.yaml with ${{ needs.ci.outputs.commit_id }}'
 
+      - name: Install Argocd
+        shell: bash
+        run: |       
+          curl -ksSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
+          rm argocd-linux-amd64
+
+      - name: Argocd app sync
+        shell: bash
+        run: |       
+          argocd  login argocd-server.argocd \
+            --insecure \
+            --grpc-web \
+            --username admin --password  ${{ secrets.ARGOCD_PASSWORD }}
+          argocd  app sync python-app 
       
