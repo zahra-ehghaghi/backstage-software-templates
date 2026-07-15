@@ -51,13 +51,12 @@ jobs:
           tags: zahraehghaghi/${{values.app_name}}:${{ '${{ env.COMMIT_ID }}' }}     
     outputs: 
       commit_id: ${{ '${{ env.COMMIT_ID }}' }}  
-  cd:
-    needs: ci
+  cd:    
     runs-on: self-hosted
-    steps:
-
+    needs: ci
+    steps:    
+      
       - uses: actions/checkout@v3
-
       - name: Modify values file
         shell: bash
         run: |
@@ -65,33 +64,33 @@ jobs:
           pip install yq
           yq -Yi '.image.tag = "${{'${{needs.ci.outputs.commit_id}}' }}"' charts/${{values.app_name}}/values-${{values.app_env}}.yaml
 
-      - name: Commit changes
+
+      - name: Commit change
         uses: EndBug/add-and-commit@v9
-        with:
-          message: 'Updates values.yaml with commit ${{ '${{needs.ci.outputs.commit_id}}' }}'
+        with: 
+          message: 'Updates values.yaml with commit ${{ '${{needs.ci.outputs.commit_id}}' }
 
-      - name: Install argocd
+      - name: Install Argocd
         shell: bash
-        run: |
-          curl -ksSL -o argocd https://argocd-server.argocd/download/argocd-linux-amd64
-          chmod +x argocd
-          sudo mv ./argocd /usr/local/bin/argocd
+        run: |       
+          curl -ksSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
+          rm argocd-linux-amd64
 
-      - name: argocd login
+      - name: Argocd app sync
         shell: bash
-        run: |
-          argocd login argocd-server.argocd \
-            --insecure  \
+        run: |       
+          argocd  login argocd-server.argocd \
+            --insecure \
             --grpc-web \
-            --username admin \
-            --password  ${{ '${{ secrets.ARGOCD_PASSWORD }}' }}
+            --username admin --password  ${{ secrets.ARGOCD_PASSWORD }}
 
       - name: Ensure argocd repo and app
         shell: bash
         run: |
 
           # Connects the argocd repo
-          repo="https://github.com/ricardoandre-97/${{values.app_name}}.git"
+          repo="https://github.com/zahra-ehghaghi-org/${{values.app_name}}.git"
           argocd repo list | grep -q $repo || argocd repo add $repo
 
           # Creates the argocd app
@@ -109,4 +108,4 @@ jobs:
         shell: bash
         run: |
           argocd app sync ${{values.app_name}}
-          argocd app wait ${{values.app_name}} --timeout 180
+          argocd app wait ${{values.app_name}} --timeout 180      
