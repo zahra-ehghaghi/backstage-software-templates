@@ -69,7 +69,7 @@ jobs:
       - name: Commit change
         uses: EndBug/add-and-commit@v9
         with: 
-          message: 'Update values.yaml with commit ${{ '${{ needs.ci.outputs.commit_id }}' }}'
+          message: 'Update values.yaml with commit ${{ needs.ci.outputs.commit_id }}'
 
       - name: Install Argocd
         shell: bash
