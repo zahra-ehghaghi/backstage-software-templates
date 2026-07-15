@@ -51,38 +51,62 @@ jobs:
           tags: zahraehghaghi/${{values.app_name}}:${{ '${{ env.COMMIT_ID }}' }}     
     outputs: 
       commit_id: ${{ '${{ env.COMMIT_ID }}' }}  
-  cd:    
-    runs-on: self-hosted
+  cd:
     needs: ci
-    steps:    
-      
+    runs-on: self-hosted
+    steps:
+
       - uses: actions/checkout@v3
 
-      - name: Modify values file 
+      - name: Modify values file
         shell: bash
-        run: |       
-          echo ${{ needs.ci.outputs.commit_id }}
+        run: |
+          echo ${{ '${{needs.ci.outputs.commit_id}}' }}
           pip install yq
-          yq -Yi '.image.tag= "${{ needs.ci.outputs.commit_id }}"' charts/python-app/values.yaml
-    
-      - name: Commit change
-        uses: EndBug/add-and-commit@v9
-        with: 
-          message: 'Update values.yaml with ${{ needs.ci.outputs.commit_id }}'
+          yq -Yi '.image.tag = "${{'${{needs.ci.outputs.commit_id}}' }}"' charts/${{values.app_name}}/values-${{values.app_env}}.yaml
 
-      - name: Install Argocd
+      - name: Commit changes
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: 'Updates values.yaml with commit ${{ '${{needs.ci.outputs.commit_id}}' }}'
+
+      - name: Install argocd
         shell: bash
-        run: |       
-          curl -ksSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-          sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
-          rm argocd-linux-amd64
+        run: |
+          curl -ksSL -o argocd https://argocd-server.argocd/download/argocd-linux-amd64
+          chmod +x argocd
+          sudo mv ./argocd /usr/local/bin/argocd
+
+      - name: argocd login
+        shell: bash
+        run: |
+          argocd login argocd-server.argocd \
+            --insecure  \
+            --grpc-web \
+            --username admin \
+            --password  ${{ '${{ secrets.ARGOCD_PASSWORD }}' }}
+
+      - name: Ensure argocd repo and app
+        shell: bash
+        run: |
+
+          # Connects the argocd repo
+          repo="https://github.com/ricardoandre-97/${{values.app_name}}.git"
+          argocd repo list | grep -q $repo || argocd repo add $repo
+
+          # Creates the argocd app
+          argocd app get ${{values.app_name}} || argocd app create ${{values.app_name}} \
+            --repo $repo \
+            --path charts/${{values.app_name}} \
+            --dest-namespace ${{values.app_env}} \
+            --dest-server https://kubernetes.default.svc \
+            --values values-${{values.app_env}}.yaml \
+            --revision master \
+            --sync-policy manual \
+            --sync-option CreateNamespace=true
 
       - name: Argocd app sync
         shell: bash
-        run: |       
-          argocd  login argocd-server.argocd \
-            --insecure \
-            --grpc-web \
-            --username admin --password  ${{ secrets.ARGOCD_PASSWORD }}
-          argocd  app sync python-app 
-      
+        run: |
+          argocd app sync ${{values.app_name}}
+          argocd app wait ${{values.app_name}} --timeout 180
