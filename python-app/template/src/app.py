@@ -9,8 +9,8 @@ def info():
         'hostname': socket.gethostname(),
         'time':  datetime.datetime.now().strftime("%I:%M:%S%p on %B %d, %Y"),
         'message': "Hallo man. Du machst toll ",
-        'deployed_on': 'kubernetes',
-        'env': '${{values.app_env}}',
+        'deployed_on': 'kubernetes' ,
+        'env': '${{values.app_env}}' ,
         'app_name': '${{values.app_name}}'
 
     })
